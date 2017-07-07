@@ -3,6 +3,7 @@ package com.nehvin.s06e105memorableplaces;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
@@ -25,27 +26,32 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
-    private GoogleMap mMap;
-    private LocationManager locMgr;
-    private LocationListener locListner;
+    private SharedPreferences sharedPreferences;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+        sharedPreferences = this.getSharedPreferences("com.nehvin.s06e105memorableplaces",Context.MODE_PRIVATE);
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
     }
+    private GoogleMap mMap;
+    private LocationManager locMgr;
+    private LocationListener locListner;
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -197,7 +203,28 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         MainActivity.location.add(lastUnkownLatLng);
         MainActivity.arrayAdapter.notifyDataSetChanged();
 
+        savePlaces();
+
+
         return nameOfPlace;
+    }
+
+    private void savePlaces() {
+        try {
+
+            ArrayList<String> latitudes = new ArrayList<>();
+            ArrayList<String> longitudes = new ArrayList<>();
+            for(LatLng coordinates : MainActivity.location)
+            {
+                latitudes.add(Double.toString(coordinates.latitude));
+                longitudes.add(Double.toString(coordinates.longitude));
+            }
+            sharedPreferences.edit().putString("PlaceList", ObjectSerializer.serialize((Serializable) MainActivity.placeList)).apply();
+            sharedPreferences.edit().putString("latitude", ObjectSerializer.serialize((Serializable) latitudes)).apply();
+            sharedPreferences.edit().putString("longitude", ObjectSerializer.serialize((Serializable) longitudes)).apply();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @NonNull
